@@ -19,6 +19,7 @@
 # include <dune/grid/multiscale/default.hh>
 #endif
 
+#include "part.hh"
 
 namespace Dune {
 namespace Stuff {
@@ -168,13 +169,7 @@ struct LayerView< GridType, ChooseLayer::leaf >
 template< class GridType >
 struct Layer< GridType, ChooseLayer::level, ChoosePartView::part >
 {
-  typedef Dune::Fem::LevelGridPart< GridType > RealType;
-  struct Type : public RealType {
-    typedef typename RealType::LevelGridView GridViewType;
-    explicit Type(GridType& g) : RealType(g) {}
-    Type(GridType& g, const int l) : RealType(g, l) {}
-    GridViewType gridView () const { return GridViewType(RealType::grid(), RealType::level()); }
-  };
+  typedef LevelPartWithGridsOriginalGridView< GridType > Type;
 
   static std::shared_ptr< Type > create(GridType& grid, const int level)
   {
