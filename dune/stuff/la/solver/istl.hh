@@ -13,6 +13,7 @@
 # include <dune/istl/operators.hh>
 # include <dune/istl/preconditioners.hh>
 # include <dune/istl/solvers.hh>
+# include <dune/istl/paamg/fastamg.hh>
 #endif // HAVE_DUNE_ISTL
 
 #include <dune/stuff/common/exceptions.hh>
@@ -121,14 +122,33 @@ public:
                                typename IstlDenseVector< S >::BackendType,
                                typename IstlDenseVector< S >::BackendType > MatrixOperatorType;
         MatrixOperatorType matrix_operator(matrix_.backend());
-        typedef SeqILUn< typename MatrixType::BackendType,
-                         typename IstlDenseVector< S >::BackendType,
-                         typename IstlDenseVector< S >::BackendType > PreconditionerType;
-        PreconditionerType preconditioner(matrix_.backend(),
-                                          opts.get("preconditioner.iterations",
-                                                   default_opts.get< int >("preconditioner.iterations")),
-                                          opts.get("preconditioner.relaxation_factor",
-                                                   default_opts.get< S >("preconditioner.relaxation_factor")));
+//        typedef SeqILUn< typename MatrixType::BackendType,
+//                         typename IstlDenseVector< S >::BackendType,
+//                         typename IstlDenseVector< S >::BackendType > PreconditionerType;
+        typedef Amg::FastAMG< MatrixOperatorType,
+                         typename IstlDenseVector< S >::BackendType> PreconditionerType;
+        Amg::Parameters amg_parameters;/*(opts.get("preconditioner.max_level",
+                                                default_opts.get< size_t >("preconditioner.max_level")),
+                                       opts.get("preconditioner.coarse_target",
+                                                default_opts.get< size_t >("preconditioner.coarse_target")),
+                                       opts.get("preconditioner.min_coarse_rate",
+                                                default_opts.get< S >("preconditioner.min_coarse_rate")),
+                                       opts.get("preconditioner.prolong_damp",
+                                                default_opts.get< S >("preconditioner.prolong_damp")));*/
+        amg_parameters.setDefaultValuesIsotropic(opts.get("preconditioner.isotropy_dim",
+                                                          3));
+        amg_parameters.setDefaultValuesAnisotropic(opts.get("preconditioner.anisotropy_dim",
+                                                            3));
+        amg_parameters.setDebugLevel(opts.get("preconditioner.verbose",
+                                              1));
+        Amg::CoarsenCriterion< Amg::SymmetricCriterion< typename MatrixType::BackendType, Amg::FirstDiagonal > >
+            amg_criterion(amg_parameters);
+
+        PreconditionerType preconditioner(matrix_operator, amg_criterion,amg_parameters);
+//                                          opts.get("preconditioner.iterations",
+//                                                   default_opts.get< int >("preconditioner.iterations")),
+//                                          opts.get("preconditioner.relaxation_factor",
+//                                                   default_opts.get< S >("preconditioner.relaxation_factor")));
         typedef BiCGSTABSolver< typename IstlDenseVector< S >::BackendType > SolverType;
         SolverType solver(matrix_operator,
                           preconditioner,
