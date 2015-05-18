@@ -71,6 +71,7 @@ template< class ScalarImp = double >
 class CommonDenseVector
   : public VectorInterface< internal::CommonDenseVectorTraits< ScalarImp >, ScalarImp >
   , public ProvidesBackend< internal::CommonDenseVectorTraits< ScalarImp > >
+  , public ProvidesDataAccess< internal::CommonDenseVectorTraits< ScalarImp > >
 {
   typedef CommonDenseVector< ScalarImp >                                               ThisType;
   typedef VectorInterface< internal::CommonDenseVectorTraits< ScalarImp >, ScalarImp > VectorInterfaceType;
@@ -113,7 +114,9 @@ public:
 
   CommonDenseVector(const ThisType& other) = default;
 
-  explicit CommonDenseVector(const BackendType& other)
+  explicit CommonDenseVector(const BackendType& other,
+                             const bool /*prune*/ = false,
+                             const ScalarType /*eps*/ = Common::FloatCmp::DefaultEpsilon< ScalarType >::value())
     : backend_(new BackendType(other))
   {}
 
@@ -165,6 +168,15 @@ public:
     ensure_uniqueness();
     return *backend_;
   } // ... backend(...)
+
+  /// \}
+  /// \name Required by ProvidesDataAccess.
+  /// \{
+
+  ScalarType* data()
+  {
+    return &(backend()[0]);
+  }
 
   /// \}
   /// \name Required by ContainerInterface.
@@ -376,9 +388,18 @@ public:
     : backend_(other.backend_)
   {}
 
-  explicit CommonDenseMatrix(const BackendType& other)
-    : backend_(new BackendType(other))
-  {}
+  /**
+   * \note If prune == true, this implementation is not optimal!
+   */
+  explicit CommonDenseMatrix(const BackendType& other,
+                             const bool prune = false,
+                             const ScalarType eps = Common::FloatCmp::DefaultEpsilon< ScalarType >::value())
+  {
+    if (prune)
+      backend_ = ThisType(other).pruned(eps).backend_;
+    else
+      backend_ = std::make_shared< BackendType >(other);
+  }
 
   template< class T >
   CommonDenseMatrix(const DenseMatrix< T >& other)
