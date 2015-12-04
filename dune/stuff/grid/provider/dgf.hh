@@ -46,7 +46,8 @@ public:
 
   static Common::Configuration default_config(const std::string sub_name = "")
   {
-    Common::Configuration config("filename", "dgf_" + Common::toString(dimDomain) + "d_interval.dgf");
+    Common::Configuration config({"type", "filename"},
+                                 {static_id(), "dgf_" + Common::toString(dimDomain) + "d_interval.dgf"});
     if (sub_name.empty())
       return config;
     else {

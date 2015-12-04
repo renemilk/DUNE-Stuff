@@ -56,7 +56,7 @@ public:
     if (   std::is_same< ALUGrid< 2, 2, simplex, conforming >, GridType >::value
         || std::is_same< ALUGrid< 2, 2, simplex, nonconforming >, GridType >::value)
       filename = "gmsh_2d_simplices.msh";
-    Common::Configuration config("filename", filename);
+    Common::Configuration config({"type", "filename"}, {static_id(), filename});
     if (sub_name.empty())
       return config;
     else {
