@@ -18,6 +18,9 @@
 #if HAVE_ALUGRID
 # include <dune/grid/io/file/dgfparser/dgfalu.hh>
 #endif
+#if HAVE_DUNE_SPGRID
+#include <dune/grid/spgrid/dgfparser.hh>
+#endif
 
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/common/string.hh>
