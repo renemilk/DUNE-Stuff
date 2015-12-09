@@ -310,7 +310,7 @@ private:
  * \brief Generic combined function.
  *
  *        This class combines two given functions of type LeftType and RightType using the given combination
- *        Combination. This class (and any derived class, like Difference, Sum or Product) can be used in two was:
+ *        Combination. This class (and any derived class, like Difference, Sum or Product) can be used in two ways:
  *        - You can pass references of the left and right operand to this class. This is done for instance when calling
  *          operator+, operator- or operator* on any function deriving from LocalizableFunctionInterface:
 \code
