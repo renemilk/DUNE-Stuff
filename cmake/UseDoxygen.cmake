@@ -1,3 +1,8 @@
+# This file is part of the dune-stuff project:
+#   https://github.com/wwu-numerik/dune-stuff
+# Copyright holders: Rene Milk, Felix Schindler
+# License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
 # are met:
@@ -69,7 +74,7 @@ endmacro()
 find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
-	find_file(DOXYFILE_IN "Doxyfile.in"
+	find_file(DOXYFILE_IN NAMES "Doxyfile.cmake.in" "Doxyfile.in" 
 			PATHS "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_ROOT}/Modules/")
 
 	include(FindPackageHandleStandardArgs)

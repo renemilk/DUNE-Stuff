@@ -1,20 +1,6 @@
-#ifndef DUNE_STUFF_CONFIG_H
-#define DUNE_STUFF_CONFIG_H
+// This file is part of the dune-stuff project:
+//   https://github.com/wwu-numerik/dune-stuff
+// Copyright holders: Rene Milk, Felix Schindler
+// License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#undef COMMIT
-
-/* the git tag / commit we build from */
-#define COMMIT "@COMMIT@"
-
-
-#include "config.h"
-
-#define @GRIDTYPE@
-#define GRIDDIM @GRIDDIM@
-#define POLORDER @POLORDER@
-
-#ifdef NDEBUG
-	#define DNDEBUG
-#endif
-
-#endif	/* DUNE_STUFF_CONFIG_H */
+#warning "DUNE-Stuff is moving to a cmake-only buildsystem. This header will disappear very soon"

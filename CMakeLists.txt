@@ -1,69 +1,87 @@
-PROJECT(dune-stuff)
+# This file is part of the dune-stuff project:
+#   https://github.com/wwu-numerik/dune-stuff
+# Copyright holders: Rene Milk, Felix Schindler
+# License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#set minimum cmake version
-cmake_minimum_required(VERSION 2.6)
+project("dune-stuff" CXX)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
-include(DuneUtils)
-include(UseDoxygen)
+# local environment
+set( ENV{PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/bin:$ENV{PATH}" )
+set( ENV{LD_LIBRARY_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/lib:$ENV{LD_LIBRARY_PATH}" )
+set( ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}" )
 
-SET (CMAKE_VERBOSE_MAKEFILE "on" )
+if(CMAKE_WITH_AUTOTOOLS)
+  message(FATAL_ERROR "combining autotools with cmake builds is no longer supported")
+endif(CMAKE_WITH_AUTOTOOLS)
+
+# this assumes that we run dunecontrol with the --use-cmake option
+
+# cmake specific
+cmake_minimum_required( VERSION 2.8 )
+
+set( CMAKE_COLOR_MAKEFILE ON)
+
+# guess dune-common build dir
+if(NOT (dune-common_DIR OR dune-common_ROOT OR
+        "${CMAKE_PREFIX_PATH}" MATCHES ".*dune-common.*"))
+    string(REPLACE  ${CMAKE_PROJECT_NAME} dune-common dune-common_DIR
+    ${PROJECT_BINARY_DIR})
+endif()
+
+#find dune-common and set the module path
+find_package(dune-common REQUIRED)
+list(APPEND CMAKE_MODULE_PATH ${dune-common_MODULE_PATH}
+"${PROJECT_SOURCE_DIR}/cmake/modules")
+
+#include the dune macros
+include(DuneMacros)
+
+# start a dune project with information from dune.module
+dune_project()
+
+# dune-stuff cmake includes
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
+
 #----------------------------------------------------------------------------------------------------
 # General Settings
 #----------------------------------------------------------------------------------------------------
-SET( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true )
-SET( CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".lib" ".la" ".a")
-SET( CMAKE_COLOR_MAKEFILE ON)
-
-EXECUTE_PROCESS(
-	COMMAND ${CMAKE_SOURCE_DIR}/getRevision.sh
-	OUTPUT_VARIABLE COMMIT
-	ERROR_VARIABLE shell_error
-	OUTPUT_STRIP_TRAILING_WHITESPACE
+execute_process(
+COMMAND ${CMAKE_SOURCE_DIR}/getRevision.sh
+OUTPUT_VARIABLE COMMIT
+ERROR_VARIABLE shell_error
+OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-#----------------------------------------------------------------------------------------------------
-# Options, that can be changed be the User in order to customise dune-stokes
-#----------------------------------------------------------------------------------------------------
-SET( BLAS_LIB
-	"blas" CACHE STRING
-	"" )
-
-SET( GRIDTYPE
-	"SGRID" CACHE STRING
-	"GRIDTYPE" )
-
-SET( GRIDDIM
-	"2" CACHE STRING
-	"GRIDDIM" )
-
-SET( POLORDER
-	"1" CACHE STRING
-	"POLORDER" )
-
-CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
-#needs to come first to include correct config.h
-INCLUDE_DIR( ${dune-stuff_BINARY_DIR} ${dune-stuff_SOURCE_DIR} )
-ADD_CXX_FLAGS( ${CUSTOM_FLAGS} )
-
-ADD_DUNE_MODULES( common istl grid fem )
-
-LINK_DIRECTORIES( "/usr/lib" ${CCGNU_LIBRARY_DIRS} )
-
-FILE( GLOB header "src/*.hh" )
-FILE( GLOB_RECURSE stuff "stuff/*.hh" )
-
-set( COMMON_LIBS "grid" "fem" "common"  ${BLAS_LIB} "GL" ${ParaLIBS} ${CCGNU_LIBRARIES} "boost_filesystem")
-set( COMMON_HEADER ${header} ${stuff} ${DUNE_HEADERS} )
-set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
-
-LINK_DIRECTORIES( "/usr/lib" )
-
-FILE( GLOB_RECURSE stuff "stuff/*.hh" )
+include(DuneUtils)
+include(GridUtils)
+# configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
 
 
-ADD_EXECUTABLE(function_test src/function_test.cc ${stuff} )
-TARGET_LINK_LIBRARIES(function_test ${COMMON_LIBS} )
+link_directories( "/usr/lib" ${CCGNU_LIBRARY_DIRS} )
 
-HEADERCHECK( ${stuff} )
-ADD_DEFINITIONS( ${MY_CXX_FLAGS} )
+# header
+file( GLOB_RECURSE stuff "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
+set( COMMON_HEADER ${stuff} ${DUNE_HEADERS} )
+# add header of dependent modules for header listing
+foreach(_mod ${ALL_DEPENDENCIES})
+file(GLOB_RECURSE HEADER_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../${_mod}/*.hh")
+list(APPEND COMMON_HEADER ${HEADER_LIST})
+endforeach(_mod DEPENDENCIES)
+set_source_files_properties(${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1)
+
+#disable most warnings from dependent modules
+foreach(_mod ${ALL_DEPENDENCIES})
+    dune_module_to_uppercase(_upper_case "${_mod}")
+    if(${_mod}_INCLUDE_DIRS)
+        foreach( _idir ${${_mod}_INCLUDE_DIRS} )
+            add_definitions("-isystem ${_idir}")
+        endforeach( _idir )
+    endif(${_mod}_INCLUDE_DIRS)
+endforeach(_mod DEPENDENCIES)
+
+add_subdirectory(dune)
+add_subdirectory("cmake/modules")
+add_subdirectory("cmake/scripts")
+add_subdirectory(doc/doxygen)
+
+finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
