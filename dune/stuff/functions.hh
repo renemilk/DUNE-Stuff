@@ -21,6 +21,7 @@
 #include "functions/ESV2007.hh"
 #include "playground/functions/indicator.hh"
 #include "functions/spe10.hh"
+#include "functions/spe10model2.hh"
 
 namespace Dune {
 namespace Stuff {
@@ -149,6 +150,7 @@ private:
   typedef Functions::ESV2007::Testcase1ExactSolution< E, D, d, R, r, rC > ESV2007Testcase1ExactSolutionType;
   typedef Functions::Indicator< E, D, d, R, r, rC >                       IndicatorType;
   typedef Functions::Spe10::Model1< E, D, d, R, r, rC >                   Spe10Model1Type;
+  typedef Functions::Spe10::Model2< E, D, d, R, r, rC >                   Spe10Model2Type;
 
 public:
   static std::vector< std::string > available()
@@ -162,6 +164,7 @@ public:
     ret = call_append< ESV2007Testcase1ExactSolutionType >(ret);
     ret = call_append< IndicatorType >(ret);
     ret = call_append< Spe10Model1Type >(ret);
+    ret = call_append< Spe10Model2Type >(ret);
     return ret;
   } // ... available(...)
 
@@ -183,6 +186,8 @@ public:
       return call_default_config< IndicatorType >(sub_name);
     else if (call_compare< Spe10Model1Type >(type))
       return call_default_config< Spe10Model1Type >(sub_name);
+    else if (call_compare< Spe10Model2Type >(type))
+      return call_default_config< Spe10Model2Type >(sub_name);
     else if (available().empty())
       DUNE_THROW(Exceptions::wrong_input_given,
                  "There is no " << InterfaceType::static_id() << " available for dimensions " << size_t(d) << " -> "
@@ -212,6 +217,8 @@ public:
       return call_create< IndicatorType >(cfg);
     else if (call_compare< Spe10Model1Type >(type))
       return call_create< Spe10Model1Type >(cfg);
+    else if (call_compare< Spe10Model2Type >(type))
+      return call_create< Spe10Model2Type >(cfg);
     else if (available().empty())
       DUNE_THROW(Exceptions::wrong_input_given,
                  "There is no " << InterfaceType::static_id() << " available for dimensions " << size_t(d) << " -> "

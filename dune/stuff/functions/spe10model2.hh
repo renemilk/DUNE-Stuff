@@ -21,22 +21,84 @@ namespace Dune {
 namespace Stuff {
 namespace Functions {
 namespace Spe10 {
+namespace internal {
+
+
+static const std::string model2_filename = "spe_perm.dat";
+static const size_t model2_x_elements = 60;
+static const size_t model2_y_elements = 220;
+static const size_t model2_z_elements = 85;
+static const double model_2_length_x = 365.76;
+static const double model_2_length_y = 670.56;
+static const double model_2_length_z = 51.816;
+
+
+} // namespace internal
+
+
+// required for FunctionsProvider
+template< class E, class D, size_t d, class R, size_t r, size_t rC = 1 >
+class Model2
+  : public LocalizableFunctionInterface< E, D, d, R, r, rC >
+{
+  Model2() { static_assert(AlwaysFalse< E >::value, "Not available for these dimensions!"); }
+};
+
 
 /**
  * Grid originally had LL (0,0,0) to UR (365.76, 670.56, 51.816) corners
  *
  */
-template <class EntityImp, class DomainFieldImp, size_t dim_domain, class RangeFieldImp, size_t r, size_t rC>
-class Model2 : public Stuff::GlobalFunctionInterface<EntityImp, DomainFieldImp, dim_domain, RangeFieldImp, r, rC> {
-  static_assert(r==rC,"");
-  static_assert(dim_domain==rC,"");
-  static_assert(dim_domain==3,"");
-  typedef Stuff::GlobalFunctionInterface<EntityImp, DomainFieldImp, dim_domain, RangeFieldImp, r, rC> BaseType;
-
+template <class EntityImp, class DomainFieldImp, class RangeFieldImp>
+class Model2<EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3>
+  : public Stuff::GlobalFunctionInterface<EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3> {
+  typedef Model2<EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3>                         ThisType;
+  typedef Stuff::GlobalFunctionInterface<EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3> BaseType;
 public:
-  Model2(std::string data_filename = "perm_case2a.dat",
-         DSC::FieldVector<double,dim_domain> upper_right = default_upper_right)
-    : deltas_{{upper_right[0]/num_elements[0], upper_right[1]/num_elements[1], upper_right[2]/num_elements[2]}}
+  using typename BaseType::DomainType;
+  using BaseType::dimDomain;
+
+  static const bool available = true;
+
+  static std::string static_id()
+  {
+    return BaseType::static_id() + ".spe10.model2";
+  }
+
+  static Common::Configuration default_config(const std::string sub_name = "")
+  {
+    Common::Configuration config;
+    config["filename"] = internal::model2_filename;
+    config["upper_right"] = "[" + Common::toString(internal::model_2_length_x) + " "
+                                + Common::toString(internal::model_2_length_y) + " "
+                                + Common::toString(internal::model_2_length_z) + "]";
+    if (sub_name.empty())
+      return config;
+    else {
+      Common::Configuration tmp;
+      tmp.add(config, sub_name);
+      return tmp;
+    }
+  } // ... default_config(...)
+
+  static std::unique_ptr< ThisType > create(const Common::Configuration config = default_config(),
+                                            const std::string sub_name = static_id())
+  {
+    const Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    const Common::Configuration default_cfg = default_config();
+    return Common::make_unique< ThisType >(
+          cfg.get("filename", default_cfg.get< std::string >("filename")),
+          cfg.get("upper_right",  default_cfg.get< DomainType >("upper_right")));
+  } // ... create(...)
+
+  Model2(const std::string& data_filename = default_config().get< std::string >("filename"),
+         const DomainType& upper_right = default_config().get< DomainType >("upper_right"))
+    : num_elements_{{internal::model2_x_elements,
+                     internal::model2_y_elements,
+                     internal::model2_z_elements}}
+    , deltas_{{upper_right[0]/internal::model2_x_elements,
+               upper_right[1]/internal::model2_y_elements,
+               upper_right[2]/internal::model2_z_elements}}
     , permeability_(nullptr)
     , permMatrix_(0.0)
     , filename_(data_filename)
@@ -44,18 +106,14 @@ public:
     readPermeability();
   }
 
-  static const DSC::FieldVector<double ,dim_domain> default_upper_right;
-  // unsigned int mandated by CubeGrid provider
-  static const DSC::FieldVector<unsigned int,dim_domain> num_elements;
-
   virtual ~Model2() {
     delete permeability_;
     permeability_ = nullptr;
   }
 
   //! currently used in gdt assembler
-  virtual void evaluate(const typename BaseType::DomainType& x, typename BaseType::RangeType& diffusion) const final override {
-
+  virtual void evaluate(const DomainType& x, typename BaseType::RangeType& diffusion) const final override
+  {
     if (!permeability_) {
       DSC_LOG_ERROR_0 << "The SPE10-permeability data file could not be opened. This file does\n"
                       << "not come with the dune-multiscale repository due to file size. To download it\n"
@@ -67,22 +125,25 @@ public:
     }
 
     // 3 is the maximum space dimension
-    for (size_t dim = 0; dim < dim_domain; ++dim)
-      permIntervalls_[dim] = std::min(unsigned(std::floor(x[dim] / deltas_[dim])), num_elements[dim] -1);
+    for (size_t dim = 0; dim < dimDomain; ++dim)
+      permIntervalls_[dim] = std::min(size_t(std::floor(x[dim] / deltas_[dim])), num_elements_[dim] -1);
 
-    const int offset = permIntervalls_[0] + permIntervalls_[1] * num_elements[0]
-                       + permIntervalls_[2] * num_elements[1] * num_elements[0];
-    for (size_t dim = 0; dim < dim_domain; ++dim) {
-      const auto idx = offset + dim * 1122000;
+    const int offset = permIntervalls_[0] + permIntervalls_[1] * internal::model2_x_elements
+                       + permIntervalls_[2] * internal::model2_y_elements * internal::model2_x_elements;
+    for (size_t dim = 0; dim < dimDomain; ++dim) {
+      const auto idx = offset + dim * (internal::model2_x_elements*internal::model2_z_elements*internal::model2_z_elements);
       diffusion[dim][dim] = permeability_[idx];
     }
   }
 
-  virtual size_t order() const {
+  virtual size_t order() const
+  {
     return 0u;
   }
+
 private:
-  void readPermeability() {
+  void readPermeability()
+  {
     std::ifstream file(filename_);
     double val;
     if (!file) { // file couldn't be opened
@@ -90,7 +151,7 @@ private:
     }
     file >> val;
     int counter = 0;
-    permeability_ = new double[3366000];
+    permeability_ = new double[dimDomain*internal::model2_x_elements*internal::model2_y_elements*internal::model2_z_elements];
     while (!file.eof()) {
       // keep reading until end-of-file
       permeability_[counter++] = val;
@@ -99,19 +160,15 @@ private:
     file.close();
   }
 
-  std::array<double, dim_domain> deltas_;
+  std::array<size_t, dimDomain> num_elements_;
+  std::array<double, dimDomain> deltas_;
   double* permeability_; //! TODO automatic memory
   mutable typename BaseType::DomainType permIntervalls_;
   mutable Dune::FieldMatrix<double, BaseType::DomainType::dimension, BaseType::DomainType::dimension> permMatrix_;
   const std::string filename_;
 };
 
-template <class EntityImp, class DomainFieldImp, size_t dim_domain, class RangeFieldImp, size_t r, size_t rC>
-const DSC::FieldVector<unsigned int,dim_domain> Model2<EntityImp, DomainFieldImp, dim_domain, RangeFieldImp, r, rC>
-    ::num_elements{{60, 220, 85}};
-template <class EntityImp, class DomainFieldImp, size_t dim_domain, class RangeFieldImp, size_t r, size_t rC>
-const DSC::FieldVector<double,dim_domain> Model2<EntityImp, DomainFieldImp, dim_domain, RangeFieldImp, r, rC>
-    ::default_upper_right{{1, 3.667, 1.417}};
+
 } // namespace Spe10
 } // namespace Functions
 } // namespace Stuff
