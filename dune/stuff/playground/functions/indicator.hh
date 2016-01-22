@@ -123,13 +123,13 @@ public:
     size_t cc = 0;
     while (cfg.has_sub(DSC::toString(cc))) {
       const Stuff::Common::Configuration local_cfg = cfg.sub(DSC::toString(cc));
-      if (local_cfg.has_key("domain") && local_cfg.has_key("value")) {
+      if (local_cfg.has_key("domain")) {
         auto domains = local_cfg.get< FieldMatrix< DomainFieldType, d, 2 > >("domain");
         for (size_t dd = 0; dd < d; ++dd) {
           tmp_lower[dd] = domains[dd][0];
           tmp_upper[dd] = domains[dd][1];
         }
-        auto val = local_cfg.get< RangeFieldType >("value");
+        auto val = local_cfg.get("value", RangeFieldType(1));
         values.emplace_back(tmp_lower, tmp_upper, val);
       } else
         break;
