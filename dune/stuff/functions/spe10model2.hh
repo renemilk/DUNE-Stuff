@@ -111,6 +111,11 @@ public:
     permeability_ = nullptr;
   }
 
+  virtual std::string name() const override final
+  {
+    return static_id();
+  }
+
   //! currently used in gdt assembler
   virtual void evaluate(const DomainType& x, typename BaseType::RangeType& diffusion) const final override
   {
