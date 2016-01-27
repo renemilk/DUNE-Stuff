@@ -63,6 +63,8 @@ public:
   typedef ScalarImp                      ScalarType;
   typedef EigenDenseVector< ScalarType > derived_type;
   typedef typename ::Eigen::Matrix< ScalarType, ::Eigen::Dynamic, 1 > BackendType;
+  static const constexpr ChooseBackend                                dense_matrix_type  = ChooseBackend::eigen_dense;
+  static const constexpr ChooseBackend                                sparse_matrix_type = ChooseBackend::eigen_sparse;
 }; // class EigenDenseVectorTraits
 
 
@@ -77,6 +79,8 @@ public:
   typedef ScalarImp                            ScalarType;
   typedef EigenMappedDenseVector< ScalarType > derived_type;
   typedef Eigen::Map< PlainBackendType >       BackendType;
+  static const constexpr ChooseBackend         dense_matrix_type  = ChooseBackend::eigen_dense;
+  static const constexpr ChooseBackend         sparse_matrix_type = ChooseBackend::eigen_sparse;
 }; // class EigenMappedDenseVectorTraits
 
 
@@ -90,6 +94,7 @@ public:
   typedef ScalarImp                      ScalarType;
   typedef EigenDenseMatrix< ScalarType > derived_type;
   typedef typename ::Eigen::Matrix< ScalarType, ::Eigen::Dynamic, ::Eigen::Dynamic > BackendType;
+  static const constexpr ChooseBackend                                               vector_type  = ChooseBackend::eigen_dense;
 }; // class EigenDenseMatrixTraits
 
 

@@ -57,6 +57,8 @@ public:
   typedef ScalarImp ScalarType;
   typedef IstlDenseVector< ScalarImp >                derived_type;
   typedef BlockVector< FieldVector< ScalarType, 1 > > BackendType;
+  static const constexpr ChooseBackend                dense_matrix_type  = ChooseBackend::istl_sparse;
+  static const constexpr ChooseBackend                sparse_matrix_type = ChooseBackend::istl_sparse;
 }; // class IstlDenseVectorTraits
 
 
@@ -70,6 +72,7 @@ public:
   typedef ScalarImp ScalarType;
   typedef IstlRowMajorSparseMatrix< ScalarType >        derived_type;
   typedef BCRSMatrix< FieldMatrix< ScalarType, 1, 1 > > BackendType;
+  static const constexpr ChooseBackend                  vector_type  = ChooseBackend::istl_sparse;
 }; // class RowMajorSparseMatrixTraits
 
 
