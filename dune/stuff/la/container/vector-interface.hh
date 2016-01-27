@@ -49,6 +49,8 @@ class VectorInterface
 public:
   typedef typename Traits::derived_type derived_type;
   typedef ScalarImp ScalarType;
+  static const constexpr ChooseBackend dense_matrix_type  = Traits::dense_matrix_type;
+  static const constexpr ChooseBackend sparse_matrix_type = Traits::sparse_matrix_type;
 
   typedef internal::VectorInputIterator< Traits, ScalarType >  const_iterator;
   typedef internal::VectorOutputIterator< Traits, ScalarType > iterator;
