@@ -30,7 +30,7 @@ static const size_t model2_z_elements = 85;
 static const double model_2_length_x = 365.76;
 static const double model_2_length_y = 670.56;
 static const double model_2_length_z = 51.816;
-static const double model_2_min_value = 6.65e-8;
+static const double model_2_min_value = 6.65e-8; // isotropic: 0.000665
 static const double model_2_max_value = 20000;
 
 
@@ -76,6 +76,7 @@ public:
     config["upper_right"] = "[" + Common::toString(internal::model_2_length_x)
                             + " " + Common::toString(internal::model_2_length_y)
                             + " " + Common::toString(internal::model_2_length_z)+ "]";
+    config["anisotropic"] = "true";
     config["min"] = Common::toString(internal::model_2_min_value);
     config["max"] = Common::toString(internal::model_2_max_value);
     if (sub_name.empty())
@@ -99,6 +100,7 @@ public:
           cfg.get("name",         default_cfg.get< std::string >("name")),
           cfg.get("lower_left",   default_cfg.get< DomainType >("lower_left")),
           cfg.get("upper_right",  default_cfg.get< DomainType >("upper_right")),
+          cfg.get("anisotropic",  default_cfg.get< bool >("anisotropic")),
           cfg.get("min",          default_cfg.get< RangeFieldType >("min")),
           cfg.get("max",          default_cfg.get< RangeFieldType >("max")));
   } // ... create(...)
@@ -107,12 +109,13 @@ public:
          const std::string nm = default_config().get< std::string >("name"),
          const Common::FieldVector< DomainFieldType, dimDomain >& lower_left = default_config().get< DomainType >("lower_left"),
          const Common::FieldVector< DomainFieldType, dimDomain >& upper_right = default_config().get< DomainType >("upper_right"),
+         const bool anisotropic = true,
          const RangeFieldType min = default_config().get< RangeFieldType >("min"),
          const RangeFieldType max = default_config().get< RangeFieldType >("max"))
     : BaseType(lower_left,
                upper_right,
                {internal::model2_x_elements, internal::model2_y_elements, internal::model2_z_elements},
-               read_values_from_file(filename, min, max),
+               read_values_from_file(filename, anisotropic, min, max),
                nm)
   {}
 
@@ -123,7 +126,10 @@ public:
   }
 
 private:
-  static std::vector< RangeType > read_values_from_file(const std::string& filename, const RangeFieldType& min, const RangeFieldType& max)
+  static std::vector< RangeType > read_values_from_file(const std::string& filename,
+                                                        const bool anisotropic,
+                                                        const RangeFieldType& min,
+                                                        const RangeFieldType& max)
 
   {
     std::ifstream datafile(filename);
@@ -150,8 +156,8 @@ private:
     std::vector<RangeType> ret(entries_per_dim, RangeType(0.));
     for (size_t ii = 0; ii < ret.size(); ++ii) {
       ret[ii][0][0] = data[ii];
-      ret[ii][1][1] = data[entries_per_dim + ii];
-      ret[ii][2][2] = data[2*entries_per_dim + ii];
+      ret[ii][1][1] = data[anisotropic ?   entries_per_dim + ii : ii];
+      ret[ii][2][2] = data[anisotropic ? 2*entries_per_dim + ii : ii];
     }
     return ret;
   } // ... read_values_from_file(...)
