@@ -180,6 +180,22 @@ public:
     return result;
   } // ... amax(...)
 
+  virtual ScalarType min() const
+  {
+    ScalarType ret = std::numeric_limits<ScalarType>::max();
+    for (const auto& element : *this)
+      ret = std::min(ret, element);
+    return ret;
+  }
+
+  virtual ScalarType max() const
+  {
+    ScalarType ret = std::numeric_limits<ScalarType>::min();
+    for (const auto& element : *this)
+      ret = std::max(ret, element);
+    return ret;
+  }
+
   /**
    *  \brief  Check vectors for equality.
    *          Equality of two vectors is defined as in Dune::FloatCmp componentwise.
