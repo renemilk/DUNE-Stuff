@@ -48,6 +48,7 @@ class MatrixInterface
 public:
   typedef typename Traits::derived_type derived_type;
   typedef ScalarImp                     ScalarType;
+  static const constexpr ChooseBackend  vector_type = Traits::vector_type;
 
   virtual ~MatrixInterface() {}
 

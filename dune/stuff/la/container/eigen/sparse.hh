@@ -58,6 +58,7 @@ public:
   typedef ScalarImp                               ScalarType;
   typedef EigenRowMajorSparseMatrix< ScalarType > derived_type;
   typedef typename ::Eigen::SparseMatrix< ScalarType, ::Eigen::RowMajor > BackendType;
+  static const constexpr ChooseBackend                                    vector_type  = ChooseBackend::eigen_dense;
 }; // class RowMajorSparseMatrixTraits
 
 

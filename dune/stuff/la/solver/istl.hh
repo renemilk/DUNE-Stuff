@@ -53,12 +53,11 @@ public:
   static std::vector< std::string > types()
   {
     return {
+             "bicgstab.amg.ilu0"
 #if !HAVE_MPI && HAVE_SUPERLU
-             "superlu"
-           ,
+           , "superlu"
 #endif
-             "bicgstab.amg.ssor"
-           , "bicgstab.amg.ilu0"
+           , "bicgstab.amg.ssor"
            , "bicgstab.ilut"
 #if HAVE_UMFPACK
            , "umfpack"
@@ -83,8 +82,8 @@ public:
       iterative_options.set("preconditioner.coarse_target", "1000");
       iterative_options.set("preconditioner.min_coarse_rate", "1.2");
       iterative_options.set("preconditioner.prolong_damp", "1.6");
-      iterative_options.set("preconditioner.anisotropy_dim", "2"); // <- this should be the dimDomain of the problem!
-      iterative_options.set("preconditioner.isotropy_dim", "2");   // <- this as well
+      iterative_options.set("preconditioner.anisotropy_dim", "3"); // <- this should be the dimDomain of the problem!
+      iterative_options.set("preconditioner.isotropy_dim", "3");   // <- this as well
       iterative_options.set("preconditioner.verbose", "0");
       return iterative_options;
     } else if (tp == "bicgstab.ilut") {

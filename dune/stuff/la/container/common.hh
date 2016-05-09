@@ -48,6 +48,8 @@ public:
   typedef ScalarImp                         ScalarType;
   typedef CommonDenseVector< ScalarType >   derived_type;
   typedef Dune::DynamicVector< ScalarType > BackendType;
+  static const constexpr ChooseBackend      dense_matrix_type  = ChooseBackend::common_dense;
+  static const constexpr ChooseBackend      sparse_matrix_type = ChooseBackend::common_dense;
 };
 
 
@@ -58,6 +60,7 @@ public:
   typedef ScalarImp                         ScalarType;
   typedef CommonDenseMatrix< ScalarType >   derived_type;
   typedef Dune::DynamicMatrix< ScalarType > BackendType;
+  static const constexpr ChooseBackend      vector_type  = ChooseBackend::common_dense;
 };
 
 
