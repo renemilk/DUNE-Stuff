@@ -5,6 +5,11 @@
 
 #include "config.h"
 
+#include <dune/stuff/common/disable_warnings.hh>
+# include <boost/algorithm/string.hpp>
+# include <boost/format.hpp>
+#include <dune/stuff/common/reenable_warnings.hh>
+
 #include <dune/common/unused.hh>
 
 #include "logstreams.hh"
@@ -83,7 +88,9 @@ int TimedPrefixedStreamBuffer::sync()
     out_ << elapsed_time_str() << prefix_;
     prefix_needed_ = false;
   }
-  auto lines = tokenize(tmp_str, "\n", boost::algorithm::token_compress_off);
+  // not using tokenize() here becaus of problematic includes regarding string.hh
+  std::vector< std::string > lines;
+  boost::algorithm::split(lines, tmp_str, boost::algorithm::is_any_of("\n"), boost::algorithm::token_compress_off);
   assert(lines.size() > 0);
   out_ << lines[0];
   for (size_t ii = 1; ii < lines.size() - 1; ++ii)
@@ -163,4 +170,3 @@ int EmptyBuffer::sync() {
 } // namespace Common
 } // namespace Stuff
 } // namespace Dune
-

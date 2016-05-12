@@ -16,7 +16,6 @@
 #include <dune/common/timer.hh>
 
 #include "memory.hh"
-#include "string.hh"
 
 namespace Dune {
 namespace Stuff {
