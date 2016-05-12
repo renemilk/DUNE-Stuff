@@ -27,12 +27,13 @@
 # include <tbb/tbb_stddef.h>
 #endif
 
+#include <dune/stuff/common/parallel/threadmanager.hh>
+#include <dune/stuff/common/ranges.hh>
+#include <dune/stuff/common/timedlogging.hh>
+
 #include <dune/stuff/grid/entity.hh>
 #include <dune/stuff/grid/intersection.hh>
 #include <dune/stuff/grid/layers.hh>
-#include <dune/stuff/common/ranges.hh>
-#include <dune/stuff/common/parallel/threadmanager.hh>
-#include <dune/stuff/common/ranges.hh>
 
 #include "walker/functors.hh"
 #include "walker/apply-on.hh"
@@ -185,8 +186,15 @@ public:
 
   virtual void prepare()
   {
+#ifndef NDEBUG
+    auto logger = Common::TimedLogger().get("stuff.grid.walker." + DSC::toString(ssize_t(this)) + ".prepare");
+    logger.debug() << "codim0_functors_.size() = " << codim0_functors_.size() << std::endl;
+#endif
     for (auto& functor : codim0_functors_)
       functor->prepare();
+#ifndef NDEBUG
+    logger.debug() << "codim1_functors_.size() = " << codim1_functors_.size() << std::endl;
+#endif
     for (auto& functor : codim1_functors_)
       functor->prepare();
   } // ... prepare()
@@ -209,6 +217,10 @@ public:
 
   virtual void apply_local(const EntityType& entity)
   {
+#ifndef NDEBUG
+    auto logger = Common::TimedLogger().get("stuff.grid.walker." + DSC::toString(ssize_t(this)) + ".apply_local");
+    logger.debug() << "codim0_functors_.size() = " << codim0_functors_.size() << std::endl;
+#endif
     for (auto& functor : codim0_functors_)
       if (functor->apply_on(this->grid_view_, entity))
         functor->apply_local(entity);
@@ -218,6 +230,10 @@ public:
                            const EntityType& inside_entity,
                            const EntityType& outside_entity)
   {
+#ifndef NDEBUG
+    auto logger = Common::TimedLogger().get("stuff.grid.walker." + DSC::toString(ssize_t(this)) + ".apply_local");
+    logger.debug() << "codim1_functors_.size() = " << codim1_functors_.size() << std::endl;
+#endif
     for (auto& functor : codim1_functors_)
       if (functor->apply_on(this->grid_view_, intersection))
         functor->apply_local(intersection, inside_entity, outside_entity);
@@ -225,8 +241,15 @@ public:
 
   virtual void finalize()
   {
+#ifndef NDEBUG
+    auto logger = Common::TimedLogger().get("stuff.grid.walker." + DSC::toString(ssize_t(this)) + ".finalize");
+    logger.debug() << "codim0_functors_.size() = " << codim0_functors_.size() << std::endl;
+#endif
     for (auto& functor : codim0_functors_)
       functor->finalize();
+#ifndef NDEBUG
+    logger.debug() << "codim1_functors_.size() = " << codim1_functors_.size() << std::endl;
+#endif
     for (auto& functor : codim1_functors_)
       functor->finalize();
   } // ... finalize()
