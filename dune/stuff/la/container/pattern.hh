@@ -6,6 +6,7 @@
 #ifndef DUNE_STUFF_LA_CONTAINER_PATTERN_HH
 #define DUNE_STUFF_LA_CONTAINER_PATTERN_HH
 
+#include <ostream>
 #include <cstddef>
 #include <vector>
 #include <set>
@@ -45,6 +46,8 @@ public:
   void sort(const size_t outer_index);
 
   void sort();
+
+  void report(std::ostream& out);
 
 private:
   BaseType vector_of_vectors_;

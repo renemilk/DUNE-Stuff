@@ -81,6 +81,17 @@ void SparsityPatternDefault::sort()
 }
 
 
+void SparsityPatternDefault::report(std::ostream& out)
+{
+  for (size_t ii = 0; ii < size(); ++ii) {
+    out << ii << ": ";
+    for (const auto& entry : inner(ii))
+      out << entry << ", ";
+    out << "\n";
+  }
+}
+
+
 } // namespace LA
 } // namespace Stuff
 } // namespace Dune
