@@ -182,6 +182,14 @@ private:
 
 
 template< class E, class D, size_t d, class R, size_t r, size_t rC = 1 >
+class
+  DUNE_DEPRECATED_MSG("Use DomainIndicator instead (13.05.2016)!")
+      Indicator
+  : public DomainIndicator< E, D, d, R, r, rC >
+{};
+
+
+template< class E, class D, size_t d, class R, size_t r, size_t rC = 1 >
 class LevelIndicator
   : public LocalizableFunctionInterface< E, D, d, R, rC >
   , Stuff::Common::ConstStorageProvider< LocalizableFunctionInterface< E, D, d, R, rC > >
