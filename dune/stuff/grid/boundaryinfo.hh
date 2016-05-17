@@ -57,13 +57,18 @@ class BoundaryInfoInterface
 #endif // HAVE_DUNE_PDELAB
 public:
   typedef IntersectionImp IntersectionType;
+  typedef typename IntersectionType::ctype DomainFieldType;
+  static const size_t dimDomain = IntersectionType::dimension;
+  static const size_t dimWorld  = IntersectionType::dimensionworld;
+  typedef Common::FieldVector<DomainFieldType, dimDomain> DomainType;
+  typedef Common::FieldVector<DomainFieldType, dimWorld> WorldType;
 
-  static const std::string static_id()
+  static std::string static_id()
   {
     return internal::boundary_info_static_id();
   }
 
-  virtual ~BoundaryInfoInterface() {}
+  virtual ~BoundaryInfoInterface() = default;
 
   virtual bool has_dirichlet() const
   {
@@ -102,7 +107,7 @@ namespace BoundaryInfoConfigs {
 class AllDirichlet
 {
 public:
-  static const std::string static_id()
+  static std::string static_id()
   {
     return internal::boundary_info_static_id() + ".alldirichlet";
   }
@@ -120,7 +125,7 @@ public:
 class AllNeumann
 {
 public:
-  static const std::string static_id()
+  static std::string static_id()
   {
     return internal::boundary_info_static_id() + ".allneumann";
   }
@@ -139,7 +144,7 @@ public:
 class IdBased
 {
 public:
-  static const std::string static_id()
+  static std::string static_id()
   {
     return internal::boundary_info_static_id() + ".idbased";
   }
@@ -164,7 +169,7 @@ public:
 class NormalBased
 {
 public:
-  static const std::string static_id()
+  static std::string static_id()
   {
     return internal::boundary_info_static_id() + ".normalbased";
   }
@@ -202,7 +207,7 @@ class AllDirichlet
 public:
   typedef typename BaseType::IntersectionType IntersectionType;
 
-  static const std::string static_id()
+  static std::string static_id()
   {
     return BoundaryInfoConfigs::AllDirichlet::static_id();
   }
@@ -253,7 +258,7 @@ class AllNeumann
 public:
   typedef typename BaseType::IntersectionType IntersectionType;
 
-  static const std::string static_id()
+  static std::string static_id()
   {
     return BoundaryInfoConfigs::AllNeumann::static_id();
   }
@@ -304,7 +309,7 @@ class IdBased
 public:
   typedef typename BaseType::IntersectionType IntersectionType;
 
-  static const std::string static_id()
+  static std::string static_id()
   {
     return BoundaryInfoConfigs::IdBased::static_id();
   }
@@ -406,15 +411,14 @@ class NormalBased
   typedef Stuff::Grid::BoundaryInfoInterface< IntersectionImp > BaseType;
   typedef NormalBased< IntersectionImp > ThisType;
 public:
-  typedef typename BaseType::IntersectionType IntersectionType;
+  using typename BaseType::IntersectionType;
+  using typename BaseType::DomainFieldType;
+  using typename BaseType::DomainType;
+  using typename BaseType::WorldType;
+  using BaseType::dimDomain;
+  using BaseType::dimWorld;
 
-  typedef typename IntersectionType::ctype                DomainFieldType;
-  static const size_t                                     dimDomain = IntersectionType::dimension;
-  static const size_t                                     dimWorld = IntersectionType::dimensionworld;
-  typedef Dune::FieldVector< DomainFieldType, dimDomain > DomainType;
-  typedef Dune::FieldVector< DomainFieldType, dimWorld >  WorldType;
-
-  static const std::string static_id()
+  static std::string static_id()
   {
     return BoundaryInfoConfigs::NormalBased::static_id();
   }
