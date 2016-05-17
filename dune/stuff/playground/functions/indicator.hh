@@ -19,6 +19,7 @@
 #include <dune/stuff/common/configuration.hh>
 
 #include "../../functions/interfaces.hh"
+#include "../../functions/constant.hh"
 
 namespace Dune {
 namespace Stuff {
@@ -33,17 +34,17 @@ class DomainIndicator
 };
 
 
-template< class E, class D, size_t d, class R >
-class DomainIndicator< E, D, d, R, 1 >
-  : public LocalizableFunctionInterface< E, D, d, R, 1 >
+template< class E, class D, size_t d, class R, size_t r >
+class DomainIndicator< E, D, d, R, r, r >
+  : public LocalizableFunctionInterface< E, D, d, R, r, r >
 {
-  typedef LocalizableFunctionInterface< E, D, d, R, 1 > BaseType;
-  typedef DomainIndicator< E, D, d, R, 1 >                    ThisType;
+  typedef LocalizableFunctionInterface< E, D, d, R, r, r > BaseType;
+  typedef DomainIndicator< E, D, d, R, r, r >              ThisType;
 
   class Localfunction
-    : public LocalfunctionInterface< E, D, d, R, 1 >
+    : public LocalfunctionInterface< E, D, d, R, r, r >
   {
-    typedef LocalfunctionInterface< E, D, d, R, 1 > InterfaceType;
+    typedef LocalfunctionInterface< E, D, d, R, r, r > InterfaceType;
   public:
     using typename InterfaceType::EntityType;
     using typename InterfaceType::DomainType;
@@ -103,7 +104,7 @@ public:
       cfg["0.domain"] = "[0.25 0.75; 0.25 0.75; 0.25 0.75]";
     else
       DUNE_THROW(NotImplemented, "Indeed!");
-    cfg["0.value"] = "1";
+    cfg["0.value"] = Common::toString(internal::unit_matrix< R, r >());
     if (sub_name.empty())
       return cfg;
     else {
@@ -118,7 +119,7 @@ public:
   {
     const Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     const Common::Configuration def_cfg = default_config();
-    std::vector< std::tuple< DomainType, DomainType, RangeFieldType > > values;
+    std::vector< std::tuple< DomainType, DomainType, RangeType > > values;
     DomainType tmp_lower;
     DomainType tmp_upper;
     size_t cc = 0;
@@ -130,7 +131,7 @@ public:
           tmp_lower[dd] = domains[dd][0];
           tmp_upper[dd] = domains[dd][1];
         }
-        auto val = local_cfg.get("value", RangeFieldType(1));
+        auto val = local_cfg.get("value", internal::unit_matrix< R, r >());
         values.emplace_back(tmp_lower, tmp_upper, val);
       } else
         break;
@@ -139,13 +140,15 @@ public:
     return Common::make_unique< ThisType >(values, cfg.get("name", def_cfg.get< std::string >("name")));
   } // ... create(...)
 
-  DomainIndicator(const std::vector< std::tuple< DomainType, DomainType, R > >& values,
+  DomainIndicator(const std::vector< std::tuple< DomainType, DomainType, RangeType > >& values,
                   const std::string name_in = default_config().get< std::string >("name"))
     : values_(values)
     , name_(name_in)
   {}
 
-  DomainIndicator(const std::vector< std::pair< std::pair< Common::FieldVector< D, d >, Common::FieldVector< D, d > >, R > >& values,
+  DomainIndicator(const std::vector< std::pair< std::pair< Common::FieldVector< D, d >,
+                                                           Common::FieldVector< D, d > >,
+                                                RangeType > >& values,
                   const std::string name_in = default_config().get< std::string >("name"))
     : values_(convert(values))
     , name_(name_in)
@@ -168,15 +171,18 @@ public:
   } // ... local_function(...)
 
 private:
-  static std::vector< std::tuple< DomainType, DomainType, R > > convert(const std::vector< std::pair< std::pair< Common::FieldVector< D, d >, Common::FieldVector< D, d > >, R > >& values)
+      static std::vector< std::tuple< DomainType, DomainType, RangeType > >
+  convert(const std::vector< std::pair< std::pair< Common::FieldVector< D, d >,
+                                                   Common::FieldVector< D, d > >,
+                                        RangeType > >& values)
   {
-    std::vector< std::tuple< DomainType, DomainType, R > > ret;
+    std::vector< std::tuple< DomainType, DomainType, RangeType > > ret;
     for (const auto& element : values)
       ret.emplace_back(element.first.first, element.first.second, element.second);
     return ret;
   } // convert(...)
 
-  const std::vector< std::tuple< DomainType, DomainType, R > > values_;
+  const std::vector< std::tuple< DomainType, DomainType, RangeType > > values_;
   const std::string name_;
 }; // class DomainIndicator
 
