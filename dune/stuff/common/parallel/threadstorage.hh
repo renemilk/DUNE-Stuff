@@ -7,6 +7,7 @@
 #define DUNE_STUFF_PARALLEL_THREADSTORAGE_HH
 
 #include <deque>
+#include <numeric>
 #include <algorithm>
 #include <type_traits>
 #if HAVE_TBB
