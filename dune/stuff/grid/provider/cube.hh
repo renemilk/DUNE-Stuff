@@ -188,10 +188,10 @@ public:
    *  \param[in]  num_elements (optional)
    *              Number of elements.
    **/
-  explicit Cube(const DomainFieldType lower_left = default_config().get< DomainType >("lower_left")[0],
-                const DomainFieldType upper_right = default_config().get< DomainType >("upper_right")[0],
-                const unsigned int num_elements = default_config().get< std::vector< unsigned int > >("num_elements")[0],
-                const size_t num_refinements = default_config().get< size_t >("num_refinements"))
+  explicit Cube(const DomainFieldType lower_left = default_config().template get< DomainType >("lower_left")[0],
+                const DomainFieldType upper_right = default_config().template get< DomainType >("upper_right")[0],
+                const unsigned int num_elements = default_config().template get< std::vector< unsigned int > >("num_elements")[0],
+                const size_t num_refinements = default_config().template get< size_t >("num_refinements"))
     : grid_ptr_(create_grid(DomainType(lower_left),
                             DomainType(upper_right),
                             parse_array(num_elements),
@@ -200,16 +200,16 @@ public:
 
   Cube(const DSC::FieldVector< DomainFieldType, dimDomain >& lower_left,
        const DSC::FieldVector< DomainFieldType, dimDomain >& upper_right,
-       const unsigned int num_elements = default_config().get< std::vector< unsigned int > >("num_elements")[0],
-       const size_t num_refinements = default_config().get< size_t >("num_refinements"))
+       const unsigned int num_elements = default_config().template get< std::vector< unsigned int > >("num_elements")[0],
+       const size_t num_refinements = default_config().template get< size_t >("num_refinements"))
     : grid_ptr_(create_grid(lower_left, upper_right, parse_array(num_elements), num_refinements))
   {}
 
   Cube(const DSC::FieldVector< DomainFieldType, dimDomain >& lower_left,
        const DSC::FieldVector< DomainFieldType, dimDomain >& upper_right,
        const std::vector< unsigned int > num_elements
-          = default_config().get< std::vector< unsigned int > >("num_elements"),
-       const size_t num_refinements = default_config().get< size_t >("num_refinements"))
+          = default_config().template get< std::vector< unsigned int > >("num_elements"),
+       const size_t num_refinements = default_config().template get< size_t >("num_refinements"))
     : grid_ptr_(create_grid(lower_left, upper_right, parse_array(num_elements), num_refinements))
   {}
 

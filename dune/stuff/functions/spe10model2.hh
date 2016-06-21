@@ -105,13 +105,13 @@ public:
           cfg.get("max",          default_cfg.get< RangeFieldType >("max")));
   } // ... create(...)
 
-  Model2(const std::string& filename = default_config().get< std::string >("filename"),
-         const std::string nm = default_config().get< std::string >("name"),
-         const Common::FieldVector< DomainFieldType, dimDomain >& lower_left = default_config().get< DomainType >("lower_left"),
-         const Common::FieldVector< DomainFieldType, dimDomain >& upper_right = default_config().get< DomainType >("upper_right"),
+  Model2(const std::string& filename = default_config().template get< std::string >("filename"),
+         const std::string nm = default_config().template get< std::string >("name"),
+         const Common::FieldVector< DomainFieldType, dimDomain >& lower_left = default_config().template get< DomainType >("lower_left"),
+         const Common::FieldVector< DomainFieldType, dimDomain >& upper_right = default_config().template get< DomainType >("upper_right"),
          const bool anisotropic = true,
-         const RangeFieldType min = default_config().get< RangeFieldType >("min"),
-         const RangeFieldType max = default_config().get< RangeFieldType >("max"))
+         const RangeFieldType min = default_config().template get< RangeFieldType >("min"),
+         const RangeFieldType max = default_config().template get< RangeFieldType >("max"))
     : BaseType(lower_left,
                upper_right,
                {internal::model2_x_elements, internal::model2_y_elements, internal::model2_z_elements},

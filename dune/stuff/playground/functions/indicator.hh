@@ -141,7 +141,7 @@ public:
   } // ... create(...)
 
   DomainIndicator(const std::vector< std::tuple< DomainType, DomainType, RangeType > >& values,
-                  const std::string name_in = default_config().get< std::string >("name"))
+                  const std::string name_in = default_config().template get< std::string >("name"))
     : values_(values)
     , name_(name_in)
   {}
@@ -149,7 +149,7 @@ public:
   DomainIndicator(const std::vector< std::pair< std::pair< Common::FieldVector< D, d >,
                                                            Common::FieldVector< D, d > >,
                                                 RangeType > >& values,
-                  const std::string name_in = default_config().get< std::string >("name"))
+                  const std::string name_in = default_config().template get< std::string >("name"))
     : values_(convert(values))
     , name_(name_in)
   {}
