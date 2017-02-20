@@ -159,6 +159,20 @@ Dimensions<GridViewType> dimensions(const typename GridViewType::Grid::template 
   return Dimensions<GridViewType>(entity);
 }
 
+//! returns size() - overlap - ghosts
+template <class GridType>
+int parallel_size(const GridType& grid, int level, int codim)
+{
+  int size = grid.size(level, codim) - grid.overlapSize(level, codim) - grid.ghostSize(level, codim);
+  return grid.comm().sum(size);
+}
+
+//! returns size() - overlap - ghosts
+template <class GridType>
+int parallel_size(const GridType& grid, int codim)
+{
+  return parallel_size(grid, grid.maxLevel(), codim);
+}
 #endif // HAVE_DUNE_GRID
 
 } // namespace Grid
