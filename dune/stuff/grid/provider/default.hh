@@ -26,8 +26,12 @@ class Default
 {
   typedef Common::StorageProvider< GridImp > StorageProviderBaseType;
   typedef ProviderInterface< GridImp > GridProviderBaseType;
+
 public:
   using typename GridProviderBaseType::GridType;
+
+  typedef typename GridImp::template Partition<InteriorBorder_Partition>::LevelGridView
+      InteriorLevelGridViewType;
 
   static const std::string static_id()
   {
