@@ -529,7 +529,6 @@ public:
 
   inline void mv(const IstlDenseVector< ScalarType >& xx, IstlDenseVector< ScalarType >& yy) const
   {
-    DUNE_STUFF_PROFILE_SCOPE(static_id() + ".mv");
     backend_->mv(*(xx.backend_), yy.backend());
   }
 
@@ -665,7 +664,6 @@ public:
 private:
   void build_sparse_matrix(const size_t rr, const size_t cc, const SparsityPatternDefault& patt)
   {
-    DUNE_STUFF_PROFILE_SCOPE(static_id() + ".build");
     backend_ = std::make_shared< BackendType >(rr, cc, BackendType::random);
     for (size_t ii = 0; ii < patt.size(); ++ii)
       backend_->setrowsize(ii, patt.inner(ii).size());

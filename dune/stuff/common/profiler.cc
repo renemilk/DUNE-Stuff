@@ -1,359 +1,241 @@
-// This file is part of the dune-stuff project:
-//   https://github.com/wwu-numerik/dune-stuff
-// Copyright holders: Rene Milk, Felix Schindler
-// License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
-//
-// Contributors: Sven Kaulmann
+// This file is part of the dune-xt-common project:
+//   https://github.com/dune-community/dune-xt-common
+// The copyright lies with the authors of this file (see below).
+// License: Dual licensed as  BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+//      or  GPL-2.0+ (http://opensource.org/licenses/gpl-license)
+//          with "runtime exception" (http://www.dune-project.org/license.html)
+// Authors:
+//   Felix Schindler (2013 - 2016)
+//   Rene Milk       (2012 - 2015)
+//   Sven Kaulmann   (2013)
+//   Tobias Leibner  (2014)
 
 #include "config.h"
+#include "profiler.hh"
 
 #include <dune/common/version.hh>
 
-#include <dune/stuff/aliases.hh>
-
-#include "profiler.hh"
-
 #if HAVE_LIKWID && ENABLE_PERFMON
-# include <likwid.h>
-# define DSC_LIKWID_BEGIN_SECTION(name) LIKWID_MARKER_START(name.c_str());
-# define DSC_LIKWID_END_SECTION(name) LIKWID_MARKER_STOP(name.c_str());
-# define DSC_LIKWID_INIT LIKWID_MARKER_INIT
-# define DSC_LIKWID_CLOSE LIKWID_MARKER_CLOSE
+#include <likwid.h>
+#define DXTC_LIKWID_BEGIN_SECTION(name) LIKWID_MARKER_START(name.c_str());
+#define DXTC_LIKWID_END_SECTION(name) LIKWID_MARKER_STOP(name.c_str());
+#define DXTC_LIKWID_INIT LIKWID_MARKER_INIT
+#define DXTC_LIKWID_CLOSE LIKWID_MARKER_CLOSE
 #else
-# define DSC_LIKWID_BEGIN_SECTION(name)
-# define DSC_LIKWID_END_SECTION(name)
-# define DSC_LIKWID_INIT
-# define DSC_LIKWID_CLOSE
+#define DXTC_LIKWID_BEGIN_SECTION(name)
+#define DXTC_LIKWID_END_SECTION(name)
+#define DXTC_LIKWID_INIT
+#define DXTC_LIKWID_CLOSE
 #endif
 
 #if DUNE_VERSION_NEWER(DUNE_COMMON, 2, 3)
-# include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/parallel/mpihelper.hh>
 #else
-# include <dune/common/mpihelper.hh>
+#include <dune/common/mpihelper.hh>
 #endif
 
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/common/ranges.hh>
 #include <dune/stuff/common/filesystem.hh>
+#include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/parallel/threadmanager.hh>
 
 #include <map>
 #include <string>
 
 #include <dune/stuff/common/disable_warnings.hh>
-# include <boost/foreach.hpp>
-# include <boost/format.hpp>
-# include <boost/filesystem.hpp>
-# include <boost/filesystem/fstream.hpp>
-# include <boost/foreach.hpp>
-# include <boost/format.hpp>
-# include <boost/date_time/posix_time/posix_time.hpp>
-# include <boost/config.hpp>
-# include <boost/timer/timer.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/config.hpp>
+#include <boost/timer/timer.hpp>
 #include <dune/stuff/common/reenable_warnings.hh>
-
 
 namespace Dune {
 namespace Stuff {
 namespace Common {
 
 TimingData::TimingData(const std::string _name)
-  : timer_(new boost::timer::cpu_timer),
-    name(_name)
-{timer_->start();}
+    : timer_(new boost::timer::cpu_timer), name(_name) {
+  timer_->start();
+}
 
 void TimingData::stop() {
   timer_->stop();
 }
 
-TimingData::DeltaType TimingData::delta() const
-{
-    const auto scale = 1.0 / double(boost::timer::nanosecond_type(1e6));
-    const auto elapsed = timer_->elapsed();
-    const auto cast = [=](double var) { return static_cast<typename TimingData::DeltaType::value_type>(var); };
-    return {{cast((elapsed.user + elapsed.system) * scale/ double(threadManager().current_threads())),
-            cast(elapsed.wall * scale),
-            cast(elapsed.user * scale),
-            cast(elapsed.system * scale)}};
+TimingData::DeltaType TimingData::delta() const {
+  const auto scale = 1.0 / double(boost::timer::nanosecond_type(1e6));
+  const auto elapsed = timer_->elapsed();
+  const auto cast = [=](double var) { return static_cast<typename TimingData::DeltaType::value_type>(var); };
+  return {{cast(elapsed.wall * scale), cast(elapsed.user * scale), cast(elapsed.system * scale)}};
 }
 
-void Profiler::startTiming(const std::string section_name, const size_t i)
-{
-    const std::string section = section_name + toString(i);
-    startTiming(section);
-}
-
-long  Profiler::stopTiming(const std::string section_name, const size_t i, const bool use_walltime)
-{
-    const std::string section = section_name + toString(i);
-    return stopTiming(section, use_walltime);
-}
-
-long  Profiler::getTiming(const std::string section_name, const size_t i, const bool use_walltime) const
-{
-    const std::string section = section_name + toString(i);
-    return getTiming(section, use_walltime);
-}
-
-void Profiler::resetTiming(const std::string section_name, const size_t i)
-{
-    const std::string section = section_name + toString(i);
-    return resetTiming(section);
-}
-
-void Profiler::resetTiming(const std::string section_name)
-{
-    try {
-        stopTiming(section_name);
-    }
-    catch (Dune::RangeError) {
-        //ok, timer simply wasn't running
-    }
-    Datamap& current_data = datamaps_[current_run_number_];
-    current_data[section_name] = {{0, 0, 0, 0}};
-}
-
-void Profiler::startTiming(const std::string section_name) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if ( current_run_number_ >= datamaps_.size() )
-  {
-    datamaps_.push_back( Datamap() );
+void Timings::reset(const std::string section_name) {
+  try {
+    stop(section_name);
+  } catch (Dune::RangeError) {
+    // ok, timer simply wasn't running
   }
+  commited_deltas_[section_name] = {{0, 0, 0}};
+}
+
+void Timings::start(const std::string section_name) {
+  std::lock_guard<std::mutex> lock(mutex_);
 
   const KnownTimersMap::iterator section = known_timers_map_.find(section_name);
-  if ( section != known_timers_map_.end() )
-  {
-    if (section->second.first)     // timer currently running
+  if (section != known_timers_map_.end()) {
+    if (section->second.first) // timer currently running
       return;
 
-    section->second.first = true;  // set active, start with new
+    section->second.first = true; // set active, start with new
     section->second.second = TimingData(section_name);
   } else {
     // init new section
-    known_timers_map_[section_name] = std::make_pair( true, TimingData(section_name) );
+    known_timers_map_[section_name] = std::make_pair(true, TimingData(section_name));
   }
-  DSC_LIKWID_BEGIN_SECTION(section_name)
+  DXTC_LIKWID_BEGIN_SECTION(section_name)
 } // StartTiming
 
-long Profiler::stopTiming(const std::string section_name, const bool use_walltime) {
-  DSC_LIKWID_END_SECTION(section_name)
-  assert( current_run_number_ < datamaps_.size() );
-  if ( known_timers_map_.find(section_name) == known_timers_map_.end() )
+long Timings::stop(const std::string section_name) {
+  DXTC_LIKWID_END_SECTION(section_name)
+  if (known_timers_map_.find(section_name) == known_timers_map_.end())
     DUNE_THROW(Dune::RangeError, "trying to stop timer " << section_name << " that wasn't started\n");
 
-  known_timers_map_[section_name].first = false;//marks as not running
-  TimingData& timing = *(known_timers_map_[section_name].second);
+  known_timers_map_[section_name].first = false; // marks as not running
+  TimingData &timing = *(known_timers_map_[section_name].second);
   timing.stop();
   const auto delta = timing.delta();
-  Datamap& current_data = datamaps_[current_run_number_];
-  if ( current_data.find(section_name) == current_data.end() )
-    current_data[section_name] = delta;
+  if (commited_deltas_.find(section_name) == commited_deltas_.end())
+    commited_deltas_[section_name] = delta;
   else {
-    for(auto i : valueRange(delta.size()))
-      current_data[section_name][i] += delta[i];
+    for (auto i : valueRange(delta.size()))
+      commited_deltas_[section_name][i] += delta[i];
   }
-  return use_walltime ? delta[1] : delta[0];
+  return delta[0];
 } // StopTiming
 
-long Profiler::getTiming(const std::string section_name, const bool use_walltime) const {
-  assert( current_run_number_ < datamaps_.size() );
-  return getTimingIdx(section_name, current_run_number_, use_walltime);
+TimingData::TimeType Timings::walltime(const std::string section_name) const {
+  return delta(section_name)[0];
 }
 
-long Profiler::getTimingIdx(const std::string section_name, const size_t run_number, const bool use_walltime) const {
-  assert( run_number < datamaps_.size() );
-  const Datamap& data = datamaps_[run_number];
-  Datamap::const_iterator section = data.find(section_name);
-  if ( section == data.end() )
-  {
-    //timer might still be running
-    const auto& timer_it = known_timers_map_.find(section_name);
+TimingData::DeltaType Timings::delta(const std::string section_name) const {
+  DeltaMap::const_iterator section = commited_deltas_.find(section_name);
+  if (section == commited_deltas_.end()) {
+    // timer might still be running
+    const auto &timer_it = known_timers_map_.find(section_name);
     if (timer_it == known_timers_map_.end())
       DUNE_THROW(Dune::InvalidStateException, "no timer found: " + section_name);
-    return use_walltime ? timer_it->second.second->delta()[1] : timer_it->second.second->delta()[0];
+    return timer_it->second.second->delta();
   }
-  return use_walltime ? section->second[1] : section->second[0];
+  return section->second;
+}
+
+void Timings::stop() {
+  for (auto &&section : known_timers_map_) {
+    try {
+      stop(section.first);
+    } catch (Dune::RangeError) {
+    }
+  }
 } // GetTiming
 
-
-void Profiler::reset(const size_t numRuns) {
-  if(!(numRuns > 0))
-      DUNE_THROW(Dune::RangeError, "preparing the profiler for 0 runs is moronic");
-  datamaps_.clear();
-  datamaps_ = DatamapVector( numRuns, Datamap() );
-  current_run_number_ = 0;
+void Timings::reset() {
+  stop();
+  commited_deltas_.clear();
 } // Reset
 
-void Profiler::addCount(const size_t num) {
-  counters_[num] += 1;
-}
-
-void Profiler::nextRun() {
-    //set all known timers to "stopped"
-    for (auto& timer_it : known_timers_map_)
-        timer_it.second.first = false;
-  current_run_number_++;
-}
-
-void Profiler::outputAveraged(const int refineLevel,
-                              const long numDofs,
-                              const double scale_factor) const {
-  const auto& comm = Dune::MPIHelper::getCollectiveCommunication();
-  const int numProce = comm.size();
-
-  boost::format csv_name("p%d_refinelvl_%d.csv");
-  csv_name % numProce % refineLevel;
-  boost::filesystem::path filename(output_dir_);
-  filename /= csv_name.str();
-
-  if (comm.rank() == 0)
-    std::cout << "Profiling info in: " << filename << std::endl;
-
-  #ifndef NDEBUG
-  for (const auto& count : counters_)
-  {
-    std::cout << "proc " << comm.rank() << " bId " << count.first << " count " << count.second << std::endl;
-  }
-  #endif // ifndef NDEBUG
-
-  boost::filesystem::ofstream csv(filename);
-
-  std::map< std::string, long > averages_map;
-  for (const auto& datamap : datamaps_)
-  {
-    for (const auto& timing : datamap)
-    {
-      //! this used to be GetTiming( it->second ), which is only valid thru an implicit and wrong conversion..
-      averages_map[timing.first] += getTiming(timing.first);
-    }
-  }
-
-// outputs column names
-  csv << "refine" << csv_sep_  << "processes" << csv_sep_ << "numDofs" << csv_sep_ << "L1 error" << csv_sep_;
-  for (const auto& avg_item : averages_map)
-  {
-    csv << avg_item.first << csv_sep_;
-  }
-  csv << "Speedup (total)" << csv_sep_ << "Speedup (ohne Solver)" << std::endl;
-
-// outputs column values
-  csv << refineLevel << csv_sep_ << comm.size() << csv_sep_ << numDofs << csv_sep_ << 0 << csv_sep_;
-  for (const auto& avg_item : averages_map)
-  {
-    long clock_count = avg_item.second;
-    clock_count = long( comm.sum(clock_count) / double(scale_factor * numProce) );
-    csv << clock_count / double(datamaps_.size()) << csv_sep_;
-  }
-  csv << "=I$2/I2" << csv_sep_ << "=SUM(E$2:G$2)/SUM(E2:G2)" << std::endl;
-  csv.close();
-} // OutputAveraged
-
-
-void Profiler::setOutputdir(const std::string dir)
-{
+void Timings::set_outputdir(const std::string dir) {
   output_dir_ = dir;
-  Dune::Stuff::Common::testCreateDirectory( output_dir_ );
+  testCreateDirectory(output_dir_);
 }
 
-void Profiler::outputTimings(const std::string csv) const
-{
-    const auto& comm = Dune::MPIHelper::getCollectiveCommunication();
-    boost::filesystem::path dir(output_dir_);
-    boost::filesystem::path filename = dir / (boost::format("%s_p%08d.csv") % csv % comm.rank()).str();
-    boost::filesystem::ofstream out(filename);
-    outputTimings(out);
-    boost::filesystem::path a_filename = dir / (boost::format("%s.csv") % csv).str();
+void Timings::output_per_rank(const std::string csv_base) const {
+  const auto rank = MPIHelper::getCollectiveCommunication().rank();
+  boost::filesystem::path dir(output_dir_);
+  boost::filesystem::path filename = dir / (boost::format("%s_p%08d.csv") % csv_base % rank).str();
+  boost::filesystem::ofstream out(filename);
+  output_all_measures(out, MPIHelper::getLocalCommunicator());
+  std::stringstream tmp_out;
+  output_all_measures(tmp_out, MPIHelper::getCommunicator());
+  if (rank == 0) {
+    boost::filesystem::path a_filename = dir / (boost::format("%s.csv") % csv_base).str();
     boost::filesystem::ofstream a_out(a_filename);
-    outputTimingsAll(a_out);
+    a_out << tmp_out.str() << std::endl;
+  }
 }
 
-void Profiler::outputTimingsAll(std::ostream& out) const
-{
-  if (datamaps_.size() < 1)
-    return;
-  //csv header:
-  const auto& comm = Dune::MPIHelper::getCollectiveCommunication();
+void Timings::output_simple(std::ostream &out) const {
+  for (const auto &section : commited_deltas_) {
+    out << csv_sep_ << section.first;
+  }
+  for (const auto &section : commited_deltas_) {
+    out << csv_sep_ << section.second[0];;
+  }
+  out << std::endl;
+}
 
+void Timings::output_all_measures(std::ostream &out, MPIHelper::MPICommunicator mpi_comm) const {
+  CollectiveCommunication<MPIHelper::MPICommunicator> comm(mpi_comm);
   std::stringstream stash;
 
-  stash << "run" << csv_sep_ << "threads" << csv_sep_ << "ranks";
-  for (const auto& section : datamaps_[0]) {
-    stash << csv_sep_ << section.first << "_avg_mix" << csv_sep_ << section.first << "_max_mix"
-          << csv_sep_ << section.first << "_avg_usr" << csv_sep_ << section.first << "_max_usr"
-          << csv_sep_ << section.first << "_avg_wall" << csv_sep_ << section.first << "_max_wall"
-          << csv_sep_ << section.first << "_avg_sys" << csv_sep_ << section.first << "_max_sys";
+  stash << "threads" << csv_sep_ << "ranks";
+  for (const auto &section : commited_deltas_) {
+    stash << csv_sep_ << section.first << "_avg_usr" << csv_sep_ << section.first << "_max_usr" << csv_sep_
+          << section.first << "_avg_wall" << csv_sep_ << section.first << "_max_wall" << csv_sep_ << section.first
+          << "_avg_sys" << csv_sep_ << section.first << "_max_sys";
   }
-  int i = 0;
   const auto weight = 1 / double(comm.size());
-  for (const auto& datamap : datamaps_) {
-    stash << std::endl << i++ << csv_sep_ << DS::threadManager().max_threads() << csv_sep_ << comm.size();
-    for (const auto& section : datamap) {
-      const auto timings = section.second;
-      auto wall = timings[1];
-      auto usr = timings[2];
-      auto sys = timings[3];
-      auto mix = timings[0];
-      const auto wall_sum = comm.sum(wall);
-      const auto wall_max = comm.max(wall);
-      const auto usr_sum = comm.sum(usr);
-      const auto usr_max = comm.max(usr);
-      const auto sys_sum = comm.sum(sys);
-      const auto sys_max = comm.max(sys);
-      const auto mix_sum = comm.sum(mix);
-      const auto mix_max = comm.max(mix);
-      stash << csv_sep_ << mix_sum * weight << csv_sep_ << mix_max
-            << csv_sep_ << usr_sum * weight << csv_sep_ << usr_max
-            << csv_sep_ << wall_sum * weight << csv_sep_ << wall_max
-            << csv_sep_ << sys_sum * weight << csv_sep_ << sys_max;
-    }
+
+  stash << std::endl << threadManager().max_threads() << csv_sep_ << comm.size();
+  for (const auto &section : commited_deltas_) {
+    const auto timings = section.second;
+    auto wall = timings[0];
+    auto usr = timings[1];
+    auto sys = timings[2];
+    const auto wall_sum = comm.sum(wall);
+    const auto wall_max = comm.max(wall);
+    const auto usr_sum = comm.sum(usr);
+    const auto usr_max = comm.max(usr);
+    const auto sys_sum = comm.sum(sys);
+    const auto sys_max = comm.max(sys);
+    stash << csv_sep_ << usr_sum * weight << csv_sep_ << usr_max << csv_sep_ << wall_sum * weight << csv_sep_
+          << wall_max << csv_sep_ << sys_sum * weight << csv_sep_ << sys_max;
   }
+
   stash << std::endl;
   if (comm.rank() == 0)
     out << stash.str();
 }
 
-void Profiler::outputTimings(std::ostream& out) const
-{
-  if (datamaps_.size() < 1)
-    return;
-  //csv header:
-  out << "run";
-  for (const auto& section : datamaps_[0]) {
-    out << csv_sep_ << section.first;
-  }
-  size_t i = 0;
-  for (const auto& datamap : datamaps_) {
-    out << std::endl << i;
-    for (const auto& section : datamap) {
-      out << csv_sep_ << section.second[0];
-    }
-    out << std::endl;
-  }
+Timings::Timings()
+    : csv_sep_(",") {
+  DXTC_LIKWID_INIT;
+  reset();
+  set_outputdir("profiling");
 }
 
-Profiler::Profiler()
-  : csv_sep_(",")
+Timings::~Timings()
 {
-  DSC_LIKWID_INIT;
-  reset(1);
-  setOutputdir("./profiling");
+  DXTC_LIKWID_CLOSE;
 }
 
-Profiler::~Profiler()
+OutputScopedTiming::OutputScopedTiming(const std::string& section_name, std::ostream& out)
+    : ScopedTiming(section_name)
+    , out_(out)
 {
-  DSC_LIKWID_CLOSE;
 }
 
-OutputScopedTiming::OutputScopedTiming(const std::string &section_name, std::ostream &out)
-  : ScopedTiming(section_name)
-  , out_(out) {}
-
-OutputScopedTiming::~OutputScopedTiming() {
-  const auto duration = profiler().stopTiming(section_name_);
+OutputScopedTiming::~OutputScopedTiming()
+{
+  const auto duration = timings().stop(section_name_);
   out_ << "Executing " << section_name_ << " took " << duration / 1000.f << "s\n";
 }
 
-
-} // namespace Common
-} // namespace Stuff
-} // namespace Dune
+}
+}
+} //namespaces Dune::Stuff::Common
