@@ -98,6 +98,7 @@ struct Dimensions
   typedef std::array< MinMaxAvgType, GridType::dimensionworld >
     CoordLimitsType;
   typedef typename GridType::template Codim<0>::Entity EntityType;
+  using BoundingBoxType = std::array<FieldVector<typename GridType::ctype, GridType::dimensionworld>, 2>;
   CoordLimitsType coord_limits;
   MinMaxAvgType entity_volume;
   MinMaxAvgType entity_width;
@@ -130,6 +131,14 @@ struct Dimensions
 
   double volumeRelation() const
   { return entity_volume.min() != 0.0 ? entity_volume.max() / entity_volume.min() : -1; }
+
+  BoundingBoxType bounding_box() const {
+    BoundingBoxType box;
+    for(auto i : DSC::valueRange(GridType::dimensionworld)) {
+      box[0][i] = coord_limits[i].min();
+      box[1][i] = coord_limits[i].max();
+    }
+  };
 
   Dimensions(const GridViewType& gridView) {
     GridDimensionsFunctor f(coord_limits, entity_volume, entity_width);
