@@ -180,8 +180,10 @@ protected:
 
 #if DSC_DO_TIMING
 #define DSC_TIMING_SCOPE(section_name) Dune::XT::Common::ScopedTiming DXTC_UNUSED(timer)(section_name)
+#define DUNE_STUFF_PROFILE_SCOPE(section_name) Dune::XT::Common::ScopedTiming DXTC_UNUSED(timer)(section_name)
 #else
 #define DSC_TIMING_SCOPE(section_name)
+#define DUNE_STUFF_PROFILE_SCOPE(section_name)
 #endif
 
 #endif // DSC_PROFILER_HH
