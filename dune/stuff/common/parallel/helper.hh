@@ -23,7 +23,13 @@ struct SequentialCommunication
 #if HAVE_DUNE_ISTL
   : public Dune::Amg::SequentialInformation
 #endif
-{};
+{
+  SequentialCommunication()
+  {
+    DUNE_THROW(InvalidStateException, "");
+  }
+};
+
 
 
 template <class GridCommImp>

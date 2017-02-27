@@ -39,10 +39,10 @@ class Solver< IstlRowMajorSparseMatrix< S >, CommunicatorType >
 public:
   typedef IstlRowMajorSparseMatrix< S > MatrixType;
 
-  Solver(const MatrixType& matrix)
-    : matrix_(matrix)
-    , communicator_(new CommunicatorType())
-  {}
+//  Solver(const MatrixType& matrix)
+//    : matrix_(matrix)
+//    , communicator_(new CommunicatorType())
+//  {}
 
   Solver(const MatrixType& matrix,
          const CommunicatorType& communicator)
