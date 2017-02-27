@@ -74,7 +74,7 @@ namespace Common {
 
 
 //! adapter enabling view usage in range-based for
-template< class GridPartViewType, size_t codim = 0 >
+template< class GridPartViewType, size_t codim = 0, PartitionIteratorType pit = InteriorBorder_Partition>
 class EntityRange
 {
   const GridPartViewType& part_view_;
@@ -86,14 +86,14 @@ public:
     BOOST_STATIC_WARNING(codim == 0 && "unnecessary EntityRange usage with codim 0");
   }
 
-  auto begin() const -> decltype(part_view_.template begin< codim >())
+  auto begin() const -> decltype(part_view_.template begin< codim, pit >())
   {
-    return part_view_.template begin< codim >();
+    return part_view_.template begin< codim, pit >();
   }
 
-  auto end() const -> decltype(part_view_.template end< codim >())
+  auto end() const -> decltype(part_view_.template end< codim, pit >())
   {
-    return part_view_.template end< codim >();
+    return part_view_.template end< codim, pit >();
   }
 }; // class EntityRange
 
@@ -107,11 +107,16 @@ EntityRange< Dune::GridView< GridViewTraits >, codim > entityRange(const Dune::G
 # if HAVE_DUNE_FEM
 
 template< class GP, size_t codim = 0 >
+EntityRange< Dune::Fem::GridPartInterface< GP >, codim, All_Partition> all_entityRange(const Dune::Fem::GridPartInterface< GP>& part)
+{
+  return EntityRange< Dune::Fem::GridPartInterface< GP >, codim, All_Partition>(part);
+}
+
+template< class GP, size_t codim = 0 >
 EntityRange< Dune::Fem::GridPartInterface< GP >, codim > entityRange(const Dune::Fem::GridPartInterface< GP>& part)
 {
   return EntityRange< Dune::Fem::GridPartInterface< GP >, codim >(part);
 }
-
 
 # endif // HAVE_DUNE_FEM
 
