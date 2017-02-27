@@ -138,6 +138,7 @@ struct Dimensions
       box[0][i] = coord_limits[i].min();
       box[1][i] = coord_limits[i].max();
     }
+    return box;
   };
 
   Dimensions(const GridViewType& gridView) {
@@ -154,8 +155,11 @@ struct Dimensions
 };
 
 template <class GridType>
-Dimensions<typename GridType::LeafGridViewType> dimensions(const GridType& grid) {
-  return Dimensions<typename GridType::LeafGridViewType>(grid.leafGridView());
+Dimensions<typename GridType::LeafGridView> leaf_dimensions(const GridType& grid) {
+  static_assert(std::is_base_of<GridView<typename GridType::LeafGridView::Traits>, typename GridType::LeafGridView>::value,
+                "GridViewType is no GridView");
+  static_assert(std::is_same<typename std::decay<decltype(grid.leafGridView())>::type, typename GridType::LeafGridView>::value, "");
+  return Dimensions<typename GridType::LeafGridView>(grid.leafGridView());
 }
 
 template <class GridViewType >
@@ -167,7 +171,6 @@ template <class GridViewType>
 Dimensions<GridViewType> dimensions(const typename GridViewType::Grid::template Codim<0>::Entity& entity) {
   return Dimensions<GridViewType>(entity);
 }
-
 //! returns size() - overlap - ghosts
 template <class GridType>
 int parallel_size(const GridType& grid, int level, int codim)
