@@ -290,13 +290,18 @@ private:
         grd_ptr = DSG::StructuredGridFactory< GridType >::createSimplexGrid(lower_left, upper_right, num_elements);
         break;
     }
+    //! initial load balance is a must for UG
+    grd_ptr->loadBalance();
     grd_ptr->preAdapt();
     grd_ptr->globalRefine(boost::numeric_cast< int >(num_refinements));
     grd_ptr->postAdapt();
 #if HAVE_UG
-    if(!std::is_same<GridType, Dune::UGGrid<GridType::dimension>>::value)
-      grd_ptr->loadBalance();
+    constexpr bool do_balance{!std::is_same<GridType, Dune::UGGrid<GridType::dimension>>::value};
+#else
+    constexpr bool do_balance{true};
 #endif
+    if(do_balance)
+      grd_ptr->loadBalance();
 
     return grd_ptr;
   } // ... create_grid(...)
