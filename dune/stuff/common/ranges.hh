@@ -103,6 +103,12 @@ EntityRange< Dune::GridView< GridViewTraits >, codim > entityRange(const Dune::G
   return EntityRange< Dune::GridView< GridViewTraits >, codim >(view);
 }
 
+template< class GridViewTraits, size_t codim = 0>
+EntityRange< Dune::GridView< GridViewTraits >, codim > all_entityRange(const Dune::GridView< GridViewTraits >& view)
+{
+  return EntityRange< Dune::GridView< GridViewTraits >, codim >(view);
+}
+
 
 # if HAVE_DUNE_FEM
 
