@@ -23,6 +23,9 @@
 # if HAVE_DUNE_SPGRID
 #   include <dune/grid/spgrid.hh>
 # endif
+# if HAVE_UG
+#   include <dune/grid/uggrid.hh>
+# endif
 # include <dune/stuff/grid/structuredgridfactory.hh>
 #endif
 
@@ -85,6 +88,14 @@ struct ElementVariant< Dune::SGrid< dimGrid, dimWorld > >
 {
   static const int id = 1;
 };
+
+#if HAVE_UG
+template< int dim >
+struct ElementVariant< Dune::UGGrid< dim > >
+{
+  static const int id = 1;
+};
+#endif
 
 #if HAVE_DUNE_SPGRID
 template< class ct, int dim, SPRefinementStrategy strategy, class Comm >
@@ -279,11 +290,14 @@ private:
         grd_ptr = DSG::StructuredGridFactory< GridType >::createSimplexGrid(lower_left, upper_right, num_elements);
         break;
     }
-    grd_ptr->loadBalance();
     grd_ptr->preAdapt();
     grd_ptr->globalRefine(boost::numeric_cast< int >(num_refinements));
     grd_ptr->postAdapt();
-    grd_ptr->loadBalance();
+#if HAVE_UG
+    if(!std::is_same<GridType, Dune::UGGrid<GridType::dimension>>::value)
+      grd_ptr->loadBalance();
+#endif
+
     return grd_ptr;
   } // ... create_grid(...)
 

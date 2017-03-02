@@ -13,6 +13,9 @@
 #if HAVE_DUNE_ISTL
 #  include <dune/istl/paamg/pinfo.hh>
 #endif
+#if HAVE_UG
+#  include <dune/grid/uggrid.hh>
+#endif
 
 namespace Dune {
 namespace Stuff {
@@ -36,7 +39,9 @@ template <class GridCommImp>
 struct UseParallelCommunication
 {
 #if HAVE_MPI && HAVE_DUNE_ISTL
-  static constexpr bool value = std::is_same< GridCommImp, CollectiveCommunication< MPI_Comm > >::value;
+  static constexpr bool value = std::is_same< GridCommImp, CollectiveCommunication< MPI_Comm > >::value
+                                || std::is_same< GridCommImp, CollectiveCommunication< Dune::UGGrid<2> > >::value
+                                || std::is_same< GridCommImp, CollectiveCommunication< Dune::UGGrid<3> > >::value;
 #else
   static constexpr bool value = false;
 #endif

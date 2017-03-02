@@ -3,7 +3,7 @@
 # Copyright holders: Rene Milk, Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-set(lib_dune_stuff_sources common/filesystem.cc 
+set(lib_dune_stuff_sources common/filesystem.cc
   common/color.cc
   common/convergence-study.cc
   common/localization-study.cc
@@ -17,7 +17,7 @@ set(lib_dune_stuff_sources common/filesystem.cc
   common/misc.cc
   common/parallel/threadmanager.cc
   common/parallel/helper.cc
-  grid/fakeentity.cc 
+  grid/fakeentity.cc
   functions/expression/mathexpr.cc
   la/container/pattern.cc
   test/common.cxx)
@@ -30,8 +30,10 @@ if(TBB_FOUND)
 endif(TBB_FOUND)
 
 if(dune-grid_FOUND)
+  include(UseUG)
   add_dune_superlu_flags(dunestuff)
   add_dune_alugrid_flags(dunestuff)
+  add_dune_ug_flags(dunestuff)
 endif(dune-grid_FOUND)
 target_link_dune_default_libraries(dunestuff)
 
